@@ -1,0 +1,6 @@
+{
+  "name": "StockSense – Retail Inventory & POS Billing System",
+  "description": "Unified retail management system with smart inventory, demand forecasting, automated reorders, suppliers, and high-speed counter POS billing with thermal/A4 receipt printing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

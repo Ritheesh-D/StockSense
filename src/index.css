@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  .font-mono, .tabular-nums {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom scrollbars for high-speed POS panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dedicated POS Receipt & Invoice Print Stylesheet */
+@media print {
+  /* Hide non-printable app shell */
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-receipt-container,
+  #printable-receipt-container * {
+    visibility: visible;
+  }
+
+  #printable-receipt-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: black;
+  }
+
+  /* Thermal 80mm / 58mm / A4 page sizing */
+  @page {
+    margin: 4mm;
+    size: auto;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
