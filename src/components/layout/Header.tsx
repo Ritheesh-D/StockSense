@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Bell, PlusCircle, Store, Database, ShieldCheck } from 'lucide-react';
+import { Menu, Bell, PlusCircle, Store, Database, ShieldCheck, Mic, Sparkles } from 'lucide-react';
 import { NavItem } from './Sidebar';
 import { BackendStatusModal } from '../common/BackendStatusModal';
 import { AuthService } from '../../services/authService';
@@ -10,6 +10,7 @@ interface HeaderProps {
   onOpenMobileNav: () => void;
   onGoToPOS: () => void;
   onOpenNotifications: () => void;
+  onOpenVoiceAssistant?: () => void;
   lowStockCount: number;
   expiringCount: number;
   storeName: string;
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileNav,
   onGoToPOS,
   onOpenNotifications,
+  onOpenVoiceAssistant,
   lowStockCount,
   expiringCount,
   storeName,
@@ -116,6 +118,18 @@ export const Header: React.FC<HeaderProps> = ({
               <PlusCircle className="w-4 h-4" />
               <span className="hidden sm:inline">New Sale (POS)</span>
               <span className="sm:hidden">POS</span>
+            </button>
+          )}
+
+          {/* AI Voice Assistant Quick Trigger */}
+          {onOpenVoiceAssistant && (
+            <button
+              onClick={onOpenVoiceAssistant}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all"
+              title="Activate StockSense AI Voice Copilot"
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ask AI</span>
             </button>
           )}
 

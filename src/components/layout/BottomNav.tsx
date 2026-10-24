@@ -55,8 +55,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <>
-      {/* Floating Action Button (FAB) - Mobile Native Feel */}
-      <div className="fixed bottom-20 right-5 z-40 sm:bottom-22 sm:right-8">
+      {/* Floating Action Button (FAB) - Quick Add Product */}
+      <div className="fixed bottom-20 right-20 z-40 sm:bottom-22 sm:right-24">
         <button
           type="button"
           onClick={onAddProduct}

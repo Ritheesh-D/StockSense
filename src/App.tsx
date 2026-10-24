@@ -15,6 +15,11 @@ import { BusinessReports } from './components/reports/BusinessReports';
 import { SettingsView } from './components/settings/SettingsView';
 import { NotificationsModal } from './components/common/NotificationsModal';
 import { MobileAddProductModal } from './components/inventory/MobileAddProductModal';
+import { CsvImportModal } from './components/inventory/CsvImportModal';
+import { FloatingVoiceButton } from './components/voice/FloatingVoiceButton';
+import { VoiceAssistantModal } from './components/voice/VoiceAssistantModal';
+import { VoiceServiceContext } from './services/voiceAssistantService';
+import { exportProductsToCsv, CsvImportSummary } from './utils/csvImportExport';
 import { StorageService } from './services/storageService';
 import { ProductRepository } from './services/productRepository';
 import { InventoryRepository } from './services/inventoryRepository';
@@ -33,6 +38,8 @@ export default function App() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   // Core Data State
   const [products, setProducts] = useState(StorageService.getProducts());
@@ -134,6 +141,26 @@ export default function App() {
     await refreshData();
   };
 
+  const handleImportComplete = async (newItems: Partial<Product>[], summary: CsvImportSummary) => {
+    for (const item of newItems) {
+      await ProductRepository.createProduct(item as any);
+    }
+    StorageService.saveRecentImport(summary);
+    await refreshData();
+  };
+
+  // StockSense AI Voice Context
+  const voiceContext: VoiceServiceContext = useMemo(() => ({
+    products,
+    invoices,
+    returns,
+    settings,
+    navigateTab: (tab: NavItem) => setCurrentTab(tab),
+    openAddProduct: () => setIsAddProductModalOpen(true),
+    openImportCsv: () => setIsCsvImportOpen(true),
+    exportCsv: () => exportProductsToCsv(products, suppliers)
+  }), [products, invoices, returns, settings, suppliers]);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-500 selection:text-white">
       {/* Responsive Desktop & Mobile Drawer Navigation */}
@@ -158,6 +185,7 @@ export default function App() {
           onOpenMobileNav={() => setIsMobileNavOpen(true)}
           onGoToPOS={() => setCurrentTab('billing')}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenVoiceAssistant={() => setIsVoiceModalOpen(true)}
           lowStockCount={lowStockCount}
           expiringCount={expiringCount}
           storeName={settings.storeName}
@@ -176,12 +204,7 @@ export default function App() {
               settings={settings}
               onNavigate={setCurrentTab}
               onReorderProduct={() => setCurrentTab('reorder')}
-              onImportProducts={async (newItems, summary) => {
-                for (const item of newItems) {
-                  await ProductRepository.createProduct(item as any);
-                }
-                await refreshData();
-              }}
+              onImportProducts={handleImportComplete}
               onOpenAddProduct={() => setIsAddProductModalOpen(true)}
             />
           )}
@@ -279,21 +302,44 @@ export default function App() {
           )}
         </main>
 
-        {/* Phase 6: Mobile Bottom Navigation Bar & Floating Action Button (+ Add Product) */}
+        {/* Phase 6: Mobile Bottom Navigation Bar */}
         <BottomNav
           currentTab={activeMobileTab}
           onSelectTab={handleSelectMobileTab}
           onAddProduct={() => setIsAddProductModalOpen(true)}
           recommendationCount={recommendations.length}
         />
+
+        {/* Floating AI Voice Assistant Button (accessible from every screen) */}
+        <FloatingVoiceButton
+          state="idle"
+          onClick={() => setIsVoiceModalOpen(true)}
+          isOpen={isVoiceModalOpen}
+        />
       </div>
 
-      {/* Quick Add Product Modal triggered by FAB */}
+      {/* StockSense AI Voice Assistant Modal */}
+      <VoiceAssistantModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        context={voiceContext}
+      />
+
+      {/* Quick Add Product Modal triggered by FAB or Voice Command */}
       <MobileAddProductModal
         isOpen={isAddProductModalOpen}
         onClose={() => setIsAddProductModalOpen(false)}
         suppliers={suppliers}
         onAddProduct={handleAddProduct}
+      />
+
+      {/* Global CSV Import Modal triggered by Voice Command */}
+      <CsvImportModal
+        isOpen={isCsvImportOpen}
+        onClose={() => setIsCsvImportOpen(false)}
+        existingProducts={products}
+        suppliers={suppliers}
+        onImportComplete={handleImportComplete}
       />
 
       {/* Notifications & Live Alert Modal */}
