@@ -1,17 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NavItem, Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
+import { BottomNav, MobileTab } from './components/layout/BottomNav';
 import { OverviewDashboard } from './components/dashboard/OverviewDashboard';
 import { BillingPOS } from './components/billing/BillingPOS';
 import { SalesHistory } from './components/sales/SalesHistory';
 import { InventoryManagement } from './components/inventory/InventoryManagement';
-import { DemandForecasting } from './components/forecast/DemandForecasting';
+import { InventoryIntelligenceHub } from './components/analytics/InventoryIntelligenceHub';
+import { RecommendationsView } from './components/recommendations/RecommendationsView';
 import { SmartReorderPlanner } from './components/reorder/SmartReorderPlanner';
 import { SupplierManagement } from './components/suppliers/SupplierManagement';
 import { PurchaseOrders } from './components/suppliers/PurchaseOrders';
 import { BusinessReports } from './components/reports/BusinessReports';
 import { SettingsView } from './components/settings/SettingsView';
 import { NotificationsModal } from './components/common/NotificationsModal';
+import { MobileAddProductModal } from './components/inventory/MobileAddProductModal';
 import { StorageService } from './services/storageService';
 import { ProductRepository } from './services/productRepository';
 import { InventoryRepository } from './services/inventoryRepository';
@@ -20,12 +23,16 @@ import { SalesRepository } from './services/salesRepository';
 import { ReturnsService } from './services/returnsService';
 import { PurchaseOrderService } from './services/purchaseOrderService';
 import { BillingService } from './services/billingService';
+import { HealthIntelligenceService } from './services/healthIntelligenceService';
 import { isSupabaseConfigured } from './services/supabaseClient';
+import { Product } from './types';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<NavItem>('billing');
+  // Mobile-first default to 'overview' (Flagship Dashboard)
+  const [currentTab, setCurrentTab] = useState<NavItem>('overview');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   // Core Data State
   const [products, setProducts] = useState(StorageService.getProducts());
@@ -59,52 +66,83 @@ export default function App() {
         if (invRes.data && invRes.data.length > 0) setInvoices(invRes.data);
         if (retRes.data) setReturns(retRes.data);
         if (poRes.data && poRes.data.length > 0) setPurchaseOrders(poRes.data);
-        if (hbRes) setHeldBills(hbRes);
-
-        setCustomers(StorageService.getCustomers());
-        setSettings(StorageService.getSettings());
-        setActivityLogs(StorageService.getActivityLogs());
-        return;
+        if (Array.isArray(hbRes)) setHeldBills(hbRes);
       } catch (err) {
-        console.warn('Backend refresh error, falling back to cached storage:', err);
+        console.warn('Backend sync failed, falling back to local storage cache', err);
       }
+    } else {
+      setProducts(StorageService.getProducts());
+      setBatches(StorageService.getBatches());
+      setSuppliers(StorageService.getSuppliers());
+      setCustomers(StorageService.getCustomers());
+      setInvoices(StorageService.getInvoices());
+      setReturns(StorageService.getReturns());
+      setPurchaseOrders(StorageService.getPurchaseOrders());
+      setSettings(StorageService.getSettings());
+      setHeldBills(StorageService.getHeldBills());
+      setActivityLogs(StorageService.getActivityLogs());
     }
-
-    // Default or Local Storage fallback
-    setProducts(StorageService.getProducts());
-    setBatches(StorageService.getBatches());
-    setSuppliers(StorageService.getSuppliers());
-    setCustomers(StorageService.getCustomers());
-    setInvoices(StorageService.getInvoices());
-    setReturns(StorageService.getReturns());
-    setPurchaseOrders(StorageService.getPurchaseOrders());
-    setSettings(StorageService.getSettings());
-    setHeldBills(StorageService.getHeldBills());
-    setActivityLogs(StorageService.getActivityLogs());
   }, []);
 
-  // Initial load
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // Listen to window storage events if multi-tab
-  useEffect(() => {
-    const handleStorageChange = () => refreshData();
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [refreshData]);
-
-  // Alert Counts
+  // Real-time metric counts for badges
   const lowStockCount = products.filter(p => p.stock <= p.minStock).length;
-  const expiringCount = batches.filter(b => b.status === 'expiring_soon').length;
+  const expiringCount = batches.filter(b => b.status === 'expiring_soon' || b.status === 'expired').length;
+
+  // Active AI Recommendations count for bottom nav badge
+  const { recommendations } = useMemo(() => {
+    return HealthIntelligenceService.calculateOverallMetrics(products, invoices, returns);
+  }, [products, invoices, returns]);
+
+  // Map NavItem to MobileTab
+  const activeMobileTab: MobileTab = useMemo(() => {
+    if (currentTab === 'inventory') return 'inventory';
+    if (currentTab === 'forecast') return 'analytics';
+    if (currentTab === 'recommendations') return 'recommendations';
+    if (currentTab === 'settings') return 'settings';
+    return 'dashboard';
+  }, [currentTab]);
+
+  const handleSelectMobileTab = (tab: MobileTab) => {
+    switch (tab) {
+      case 'dashboard':
+        setCurrentTab('overview');
+        break;
+      case 'inventory':
+        setCurrentTab('inventory');
+        break;
+      case 'analytics':
+        setCurrentTab('forecast');
+        break;
+      case 'recommendations':
+        setCurrentTab('recommendations');
+        break;
+      case 'settings':
+        setCurrentTab('settings');
+        break;
+    }
+  };
+
+  const handleAddProduct = async (productData: Partial<Product>) => {
+    const res = await ProductRepository.createProduct(productData as any);
+    if (res.error) {
+      throw new Error(res.error);
+    }
+    await refreshData();
+  };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 text-slate-900 font-sans overflow-hidden">
-      {/* Sidebar Navigation */}
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-500 selection:text-white">
+      {/* Responsive Desktop & Mobile Drawer Navigation */}
       <Sidebar
         currentTab={currentTab}
-        onSelectTab={setCurrentTab}
+        onSelectTab={(tab) => {
+          setCurrentTab(tab);
+          setIsMobileNavOpen(false);
+        }}
         heldBillsCount={heldBills.length}
         lowStockCount={lowStockCount}
         isOpenMobile={isMobileNavOpen}
@@ -112,9 +150,9 @@ export default function App() {
         cashierName={settings.cashierName}
       />
 
-      {/* Main Viewport Container */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Header */}
+      {/* Main App Container */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {/* Modern Top Header */}
         <Header
           currentTab={currentTab}
           onOpenMobileNav={() => setIsMobileNavOpen(true)}
@@ -126,15 +164,25 @@ export default function App() {
           onRoleChanged={refreshData}
         />
 
-        {/* Dynamic Main Workspace View */}
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        {/* Dynamic Main Workspace View with bottom padding for mobile bar */}
+        <main className="flex-1 overflow-y-auto bg-slate-50 pb-20 md:pb-6">
           {currentTab === 'overview' && (
             <OverviewDashboard
               products={products}
               invoices={invoices}
+              returns={returns}
+              suppliers={suppliers}
               batches={batches}
               settings={settings}
               onNavigate={setCurrentTab}
+              onReorderProduct={() => setCurrentTab('reorder')}
+              onImportProducts={async (newItems, summary) => {
+                for (const item of newItems) {
+                  await ProductRepository.createProduct(item as any);
+                }
+                await refreshData();
+              }}
+              onOpenAddProduct={() => setIsAddProductModalOpen(true)}
             />
           )}
 
@@ -157,15 +205,30 @@ export default function App() {
             <InventoryManagement
               products={products}
               settings={settings}
+              suppliers={suppliers}
               onRefreshData={refreshData}
             />
           )}
 
           {currentTab === 'forecast' && (
-            <DemandForecasting
+            <InventoryIntelligenceHub
               products={products}
               invoices={invoices}
+              returns={returns}
               settings={settings}
+              onReorder={() => setCurrentTab('reorder')}
+              onViewProduct={() => setCurrentTab('inventory')}
+            />
+          )}
+
+          {currentTab === 'recommendations' && (
+            <RecommendationsView
+              products={products}
+              invoices={invoices}
+              returns={returns}
+              settings={settings}
+              onNavigateTab={setCurrentTab}
+              onReorderProduct={() => setCurrentTab('reorder')}
             />
           )}
 
@@ -215,7 +278,23 @@ export default function App() {
             />
           )}
         </main>
+
+        {/* Phase 6: Mobile Bottom Navigation Bar & Floating Action Button (+ Add Product) */}
+        <BottomNav
+          currentTab={activeMobileTab}
+          onSelectTab={handleSelectMobileTab}
+          onAddProduct={() => setIsAddProductModalOpen(true)}
+          recommendationCount={recommendations.length}
+        />
       </div>
+
+      {/* Quick Add Product Modal triggered by FAB */}
+      <MobileAddProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={() => setIsAddProductModalOpen(false)}
+        suppliers={suppliers}
+        onAddProduct={handleAddProduct}
+      />
 
       {/* Notifications & Live Alert Modal */}
       <NotificationsModal

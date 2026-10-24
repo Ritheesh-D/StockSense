@@ -12,7 +12,8 @@ import {
   Settings,
   Layers,
   X,
-  UserCheck
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 
 export type NavItem = 
@@ -21,6 +22,7 @@ export type NavItem =
   | 'sales_history'
   | 'inventory'
   | 'forecast'
+  | 'recommendations'
   | 'reorder'
   | 'suppliers'
   | 'purchase_orders'
@@ -47,15 +49,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   cashierName = 'Admin'
 }) => {
   const navItems: { id: NavItem; label: string; icon: React.ElementType; badge?: number | string; badgeColor?: string }[] = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'inventory', label: 'Inventory', icon: Package, badge: lowStockCount > 0 ? lowStockCount : undefined, badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
+    { id: 'forecast', label: 'Analytics & Risk', icon: BarChart3 },
+    { id: 'recommendations', label: 'AI Health Insights', icon: Sparkles, badge: 'AI', badgeColor: 'bg-blue-500/20 text-blue-300 border border-blue-500/30' },
     { id: 'billing', label: 'Billing / POS', icon: Receipt, badge: heldBillsCount > 0 ? `${heldBillsCount} held` : undefined, badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' },
     { id: 'sales_history', label: 'Sales History', icon: History },
-    { id: 'inventory', label: 'Inventory', icon: Package, badge: lowStockCount > 0 ? lowStockCount : undefined, badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
-    { id: 'forecast', label: 'Demand Forecast', icon: TrendingUp },
     { id: 'reorder', label: 'Smart Reorder Planner', icon: RefreshCw },
     { id: 'suppliers', label: 'Suppliers', icon: Truck },
     { id: 'purchase_orders', label: 'Purchase Orders', icon: ClipboardList },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'reports', label: 'Reports', icon: TrendingUp },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

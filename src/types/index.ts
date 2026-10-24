@@ -17,11 +17,64 @@ export interface Product {
   sellingPrice: number;  // Retail price
   stock: number;         // Current sellable stock
   minStock: number;      // Threshold for low stock warning
+  maxStock?: number;     // Threshold for overstock warning (defaults to minStock * 4)
   unit: string;          // e.g. 'pcs', 'kg', 'pack'
   imageUrl?: string;
   supplierId: string;
   shelfLifeDays?: number;
   lastRestockedDate?: string;
+}
+
+export type HealthStatus = 'HEALTHY' | 'OVERSTOCK' | 'UNDERSTOCK' | 'CRITICAL' | 'DEAD_STOCK' | 'SLOW_MOVING';
+export type RiskQuadrant = 'Critical' | 'Low Stock' | 'Balanced' | 'Overstocked';
+
+export interface ProductHealthAnalysis {
+  productId: string;
+  name: string;
+  sku: string;
+  category: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+  sellingPrice: number;
+  purchasePrice: number;
+  velocity: number; // daily sales
+  daysOfCoverage: number;
+  healthStatus: HealthStatus;
+  riskScore: number; // 0 to 100
+  quadrant: RiskQuadrant;
+  recommendation: string;
+  capitalAtRisk?: number;
+}
+
+export interface InventoryHealthMetrics {
+  healthScore: number; // 0 - 100
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+  healthyPercent: number;
+  overstockPercent: number;
+  understockPercent: number;
+  deadStockPercent: number;
+  criticalPercent: number;
+  totalProducts: number;
+  totalStockValue: number;
+  capitalTiedInOverstock: number;
+  immediateStockoutCount: number;
+  overstockedCount: number;
+  slowMovingCount: number;
+}
+
+export interface SmartRecommendation {
+  id: string;
+  title: string;
+  type: 'stockout_risk' | 'overstock' | 'slow_moving' | 'reorder' | 'optimization';
+  severity: 'critical' | 'warning' | 'info' | 'success';
+  productId?: string;
+  productName?: string;
+  description: string;
+  impactMetric: string;
+  actionLabel: string;
+  actionType: 'reorder' | 'discount' | 'review' | 'create_po';
+  daysLeft?: number;
 }
 
 export interface InventoryBatch {

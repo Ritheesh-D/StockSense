@@ -28,11 +28,12 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isBackendModalOpen, setIsBackendModalOpen] = useState(false);
   const titles: Record<NavItem, { title: string; subtitle: string }> = {
-    overview: { title: 'Dashboard', subtitle: 'Store performance, live sales & alerts' },
+    overview: { title: 'Dashboard', subtitle: 'Inventory Health, Risk Matrix & Portfolio Intelligence' },
     billing: { title: 'Billing / POS', subtitle: 'Counter checkout & invoice generation' },
     sales_history: { title: 'Sales History', subtitle: 'All completed invoices, receipts & returns' },
-    inventory: { title: 'Product Management', subtitle: 'Catalog, stock levels & batch records' },
-    forecast: { title: 'Demand Forecasting', subtitle: 'AI predicted sales & historical trends' },
+    inventory: { title: 'Product Inventory', subtitle: 'Catalog, stock levels, CSV import & alerts' },
+    forecast: { title: 'Inventory Intelligence', subtitle: 'Health gauge, risk matrix & reorder priorities' },
+    recommendations: { title: 'AI Health Insights', subtitle: 'Autonomous stock optimization recommendations' },
     reorder: { title: 'Smart Reorder Recommendations', subtitle: 'Automated lead-time replenishment' },
     suppliers: { title: 'Suppliers', subtitle: 'Vendor contacts & catalog distribution' },
     purchase_orders: { title: 'Purchase Orders', subtitle: 'Restock orders & inventory receiving' },

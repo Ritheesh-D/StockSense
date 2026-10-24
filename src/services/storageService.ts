@@ -23,6 +23,7 @@ import {
   INITIAL_INVOICES,
   INITIAL_SETTINGS
 } from '../data/initialData';
+import { CsvImportSummary } from '../utils/csvImportExport';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'stocksense_products_v2',
@@ -34,7 +35,8 @@ const STORAGE_KEYS = {
   PURCHASE_ORDERS: 'stocksense_purchase_orders_v2',
   SETTINGS: 'stocksense_settings_v2',
   HELD_BILLS: 'stocksense_held_bills_v2',
-  ACTIVITY_LOG: 'stocksense_activity_log_v2'
+  ACTIVITY_LOG: 'stocksense_activity_log_v2',
+  RECENT_IMPORTS: 'stocksense_recent_imports_v2'
 };
 
 const fallbackMemStore = new Map<string, string>();
@@ -504,5 +506,37 @@ export class StorageService {
       description: 'System restored to factory demo state',
       user: 'Admin'
     });
+  }
+
+  // Recent CSV Imports
+  static getRecentImports(): CsvImportSummary[] {
+    const defaultImports: CsvImportSummary[] = [
+      {
+        id: 'import-demo-1',
+        timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
+        fileName: 'retail_catalog_batch.csv',
+        totalRows: 16,
+        successCount: 16,
+        duplicateCount: 0,
+        errorCount: 0
+      },
+      {
+        id: 'import-demo-2',
+        timestamp: new Date(Date.now() - 3600000 * 72).toISOString(),
+        fileName: 'beverage_suppliers_q3.csv',
+        totalRows: 8,
+        successCount: 7,
+        duplicateCount: 1,
+        errorCount: 0
+      }
+    ];
+    return safeGet<CsvImportSummary[]>(STORAGE_KEYS.RECENT_IMPORTS, defaultImports);
+  }
+
+  static saveRecentImport(summary: CsvImportSummary): void {
+    const list = this.getRecentImports();
+    list.unshift(summary);
+    // keep latest 10
+    safeSet(STORAGE_KEYS.RECENT_IMPORTS, list.slice(0, 10));
   }
 }
